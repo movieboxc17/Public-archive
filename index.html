@@ -194,6 +194,37 @@
 
         #logoutBtn {
             margin-left: 10px;
+            padding: 5px 10px;
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #logoutBtn:hover {
+            background: #666;
+        }
+
+        .metadata {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .upload-progress {
+            margin-top: 10px;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #4a4a4a;
+            width: 0%;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -209,7 +240,6 @@
             <div class="archive-date">National Archives Collection</div>
         </header>
 
-        <!-- Auth Forms -->
         <div class="auth-forms" id="authForms">
             <div class="auth-form" id="loginForm">
                 <h3>Login to Archive</h3>
@@ -248,7 +278,6 @@
             </div>
         </div>
 
-        <!-- Main Archive Content -->
         <div id="mainContent" style="display: none;">
             <nav class="archive-nav">
                 <a href="#" class="active">Home</a>
@@ -291,6 +320,9 @@
                         <div class="form-group">
                             <label for="document">Upload Document:</label>
                             <input type="file" id="document" accept=".pdf,.jpg,.png,.doc,.docx">
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar"></div>
+                            </div>
                         </div>
                         <button type="submit">Add to Archive</button>
                     </form>
@@ -302,9 +334,28 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            serverTimestamp, 
+            onSnapshot, 
+            query, 
+            orderBy 
+        } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
+        import { 
+            getStorage, 
+            ref, 
+            uploadBytes, 
+            getDownloadURL,
+            uploadBytesResumable
+        } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBwjmfqvb4-y1cos7DCSIbolFc_wO5lPs8",
@@ -322,8 +373,10 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Auth state handling
+        console.log('Firebase initialized successfully');
+
         auth.onAuthStateChanged(user => {
+            console.log('Auth state changed:', user ? user.email : 'No user');
             const authForms = document.getElementById('authForms');
             const mainContent = document.getElementById('mainContent');
             const userEmail = document.getElementById('userEmail');
@@ -334,6 +387,7 @@
                 mainContent.style.display = 'block';
                 userEmail.textContent = user.email;
                 logoutBtn.style.display = 'inline-block';
+                loadArchiveData();
             } else {
                 authForms.style.display = 'block';
                 mainContent.style.display = 'none';
@@ -342,7 +396,28 @@
             }
         });
 
-        // Form switching
+        function loadArchiveData() {
+            console.log('Loading archive data...');
+            const q = query(collection(db, 'archives'), orderBy('timestamp', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                const archiveList = document.getElementById('archiveList');
+                archiveList.innerHTML = '';
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    console.log('Document data:', data);
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="date">${data.date}</span>
+                        <a href="${data.fileUrl || '#'}" target="_blank">${data.title}</a>
+                        <span class="category-tag">${data.category}</span>
+                        <div class="metadata">${data.description}</div>
+                    `;
+                    archiveList.appendChild(li);
+                });
+            });
+        }
+
         document.getElementById('showSignup').addEventListener('click', () => {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('signupForm').style.display = 'block';
@@ -353,7 +428,6 @@
             document.getElementById('loginForm').style.display = 'block';
         });
 
-        // Login
         document.getElementById('emailLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -361,13 +435,14 @@
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
+                console.log('Login successful');
                 e.target.reset();
             } catch (error) {
+                console.error('Login error:', error);
                 alert('Login failed: ' + error.message);
             }
         });
 
-        // Signup
         document.getElementById('emailSignupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('signupEmail').value;
@@ -381,59 +456,58 @@
 
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
+                console.log('Signup successful');
                 e.target.reset();
             } catch (error) {
+                console.error('Signup error:', error);
                 alert('Signup failed: ' + error.message);
             }
         });
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
                 await signOut(auth);
+                console.log('Logout successful');
             } catch (error) {
+                console.error('Logout error:', error);
                 alert('Logout failed: ' + error.message);
             }
         });
 
-        // Real-time updates for archive entries
-        const q = query(collection(db, 'archives'), orderBy('timestamp', 'desc'));
-        onSnapshot(q, (snapshot) => {
-            const archiveList = document.getElementById('archiveList');
-            archiveList.innerHTML = '';
-            
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="date">${data.date}</span>
-                    <a href="${data.fileUrl || '#'}" target="_blank">${data.title}</a>
-                    <span class="category-tag">${data.category}</span>
-                    <div class="metadata">${data.description}</div>
-                `;
-                archiveList.appendChild(li);
-            });
-        });
-
-        // New entry form handling
         document.getElementById('newEntryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Starting new entry submission...');
             
             const title = document.getElementById('entryTitle').value;
             const date = document.getElementById('entryDate').value;
             const category = document.getElementById('category').value;
             const description = document.getElementById('description').value;
             const file = document.getElementById('document').files[0];
+            const progressBar = document.querySelector('.progress-bar');
+            const progressContainer = document.querySelector('.upload-progress');
 
             try {
                 let fileUrl = null;
                 if (file) {
+                    console.log('Uploading file:', file.name);
+                    progressContainer.style.display = 'block';
+                    
                     const storageRef = ref(storage, `documents/${Date.now()}-${file.name}`);
-                    await uploadBytes(storageRef, file);
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            progressBar.style.width = progress + '%';
+                        }
+                    );
+
+                    await uploadTask;
                     fileUrl = await getDownloadURL(storageRef);
+                    console.log('File uploaded successfully:', fileUrl);
                 }
 
-                await addDoc(collection(db, 'archives'), {
+                const docRef = await addDoc(collection(db, 'archives'), {
                     title,
                     date,
                     category,
@@ -444,10 +518,16 @@
                     userEmail: auth.currentUser.email
                 });
 
-                e.target.reset();
+                console.log('Document written with ID:', docRef.id);
                 alert('Document successfully added to archive!');
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+                e.target.reset();
             } catch (error) {
+                console.error('Upload error:', error);
                 alert('Error adding document: ' + error.message);
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
             }
         });
     </script>

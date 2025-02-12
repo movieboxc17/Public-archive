@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Classic Archive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Archive Database</title>
     <style>
         body {
             background-color: #f4f1e9;
@@ -82,8 +83,9 @@
 
         .archive-entry li {
             margin: 10px 0;
-            padding: 5px;
+            padding: 15px;
             border-bottom: 1px dotted #ddd;
+            background: #fafafa;
         }
 
         .date {
@@ -95,6 +97,7 @@
         .archive-entry a {
             color: #2c2c2c;
             text-decoration: none;
+            font-weight: bold;
         }
 
         .archive-entry a:hover {
@@ -116,13 +119,20 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
+            font-weight: bold;
         }
 
-        .form-group input {
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 8px;
             font-family: inherit;
             border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
         }
 
         button {
@@ -132,80 +142,220 @@
             padding: 10px 20px;
             cursor: pointer;
             font-family: inherit;
+            border-radius: 4px;
         }
 
         button:hover {
             background: #666;
         }
+
+        .auth-section {
+            text-align: right;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .category-tag {
+            background: #e0e0e0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .document-preview {
+            max-width: 200px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+
+        .metadata {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="archive-container">
+        <div class="auth-section">
+            <span class="user-info" id="userInfo"></span>
+            <button id="loginBtn">Login with Google</button>
+            <button id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+
         <header>
-            <h1>📚 The Classic Archive</h1>
-            <div class="archive-date">Est. 2024</div>
+            <h1>📚 Historical Archive Database</h1>
+            <div class="archive-date">National Archives Collection</div>
         </header>
         
         <nav class="archive-nav">
             <a href="#" class="active">Home</a>
-            <a href="#">Documents</a>
-            <a href="#">Collections</a>
-            <a href="#">About</a>
+            <a href="#">Medieval Documents</a>
+            <a href="#">War Records</a>
+            <a href="#">Cultural Heritage</a>
+            <a href="#">Scientific Papers</a>
         </nav>
 
         <div class="archive-content">
             <div class="archive-entry">
-                <h2>Latest Additions</h2>
-                <ul>
-                    <li>
-                        <span class="date">2024-01-20</span>
-                        <a href="#">Ancient Manuscripts Collection</a>
-                    </li>
-                    <li>
-                        <span class="date">2024-01-19</span>
-                        <a href="#">Historical Documents</a>
-                    </li>
-                    <li>
-                        <span class="date">2024-01-18</span>
-                        <a href="#">Vintage Photographs</a>
-                    </li>
-                </ul>
+                <h2>Historical Records</h2>
+                <ul id="archiveList"></ul>
             </div>
 
-            <div class="add-entry-form">
-                <h2>Add New Entry</h2>
+            <div class="add-entry-form" id="entryForm" style="display: none;">
+                <h2>Add Historical Document</h2>
                 <form id="newEntryForm">
                     <div class="form-group">
-                        <label for="entryTitle">Title:</label>
+                        <label for="entryTitle">Document Title:</label>
                         <input type="text" id="entryTitle" required>
                     </div>
                     <div class="form-group">
-                        <label for="entryDate">Date:</label>
+                        <label for="entryDate">Original Date:</label>
                         <input type="date" id="entryDate" required>
                     </div>
-                    <button type="submit">Add Entry</button>
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select id="category" required>
+                            <option value="medieval">Medieval Documents</option>
+                            <option value="war">War Records</option>
+                            <option value="cultural">Cultural Heritage</option>
+                            <option value="scientific">Scientific Papers</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="document">Upload Document:</label>
+                        <input type="file" id="document" accept=".pdf,.jpg,.png,.doc,.docx">
+                    </div>
+                    <button type="submit">Add to Archive</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <script>
-        document.getElementById('newEntryForm').addEventListener('submit', function(e) {
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwjmfqvb4-y1cos7DCSIbolFc_wO5lPs8",
+            authDomain: "public-archive-33322.firebaseapp.com",
+            projectId: "public-archive-33322",
+            storageBucket: "public-archive-33322.firebasestorage.app",
+            messagingSenderId: "743815264630",
+            appId: "1:743815264630:web:9c28fb4049529626d56257",
+            measurementId: "G-RWLTHTTB07"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // Auth state handling
+        auth.onAuthStateChanged(user => {
+            const userInfo = document.getElementById('userInfo');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const entryForm = document.getElementById('entryForm');
+
+            if (user) {
+                userInfo.textContent = `Welcome, ${user.email}`;
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+                entryForm.style.display = 'block';
+            } else {
+                userInfo.textContent = '';
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+                entryForm.style.display = 'none';
+            }
+        });
+
+        // Login functionality
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error('Login error:', error);
+            }
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        });
+
+        // Real-time updates for archive entries
+        const q = query(collection(db, 'archives'), orderBy('timestamp', 'desc'));
+        onSnapshot(q, (snapshot) => {
+            const archiveList = document.getElementById('archiveList');
+            archiveList.innerHTML = '';
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="date">${data.date}</span>
+                    <a href="${data.fileUrl || '#'}" target="_blank">${data.title}</a>
+                    <span class="category-tag">${data.category}</span>
+                    <div class="metadata">${data.description}</div>
+                `;
+                archiveList.appendChild(li);
+            });
+        });
+
+        // Form submission handling
+        document.getElementById('newEntryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const title = document.getElementById('entryTitle').value;
             const date = document.getElementById('entryDate').value;
-            
-            const newEntry = document.createElement('li');
-            newEntry.innerHTML = `
-                <span class="date">${date}</span>
-                <a href="#">${title}</a>
-            `;
-            
-            document.querySelector('.archive-entry ul').insertBefore(newEntry, document.querySelector('.archive-entry ul').firstChild);
-            
-            document.getElementById('entryTitle').value = '';
-            document.getElementById('entryDate').value = '';
+            const category = document.getElementById('category').value;
+            const description = document.getElementById('description').value;
+            const file = document.getElementById('document').files[0];
+
+            try {
+                let fileUrl = null;
+                if (file) {
+                    const storageRef = ref(storage, `documents/${Date.now()}-${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    fileUrl = await getDownloadURL(storageRef);
+                }
+
+                await addDoc(collection(db, 'archives'), {
+                    title,
+                    date,
+                    category,
+                    description,
+                    fileUrl,
+                    timestamp: serverTimestamp(),
+                    userId: auth.currentUser.uid
+                });
+
+                e.target.reset();
+            } catch (error) {
+                console.error('Error adding document:', error);
+            }
         });
     </script>
 </body>

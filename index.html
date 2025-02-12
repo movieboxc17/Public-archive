@@ -22,6 +22,59 @@
             padding: 20px;
         }
 
+        .auth-forms {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .auth-form {
+            padding: 20px;
+        }
+
+        .auth-form h3 {
+            margin-top: 0;
+            color: #4a4a4a;
+            text-align: center;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .auth-form button {
+            width: 100%;
+            margin-top: 10px;
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .auth-form button:hover {
+            background: #666;
+        }
+
+        .auth-form p {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .auth-form a {
+            color: #4a4a4a;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
         header {
             text-align: center;
             border-bottom: 2px double #666;
@@ -94,15 +147,12 @@
             font-size: 0.9em;
         }
 
-        .archive-entry a {
-            color: #2c2c2c;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .archive-entry a:hover {
-            text-decoration: underline;
-            color: #666;
+        .category-tag {
+            background: #e0e0e0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
         }
 
         .add-entry-form {
@@ -122,11 +172,12 @@
             font-weight: bold;
         }
 
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 8px;
-            font-family: inherit;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             border-radius: 4px;
         }
 
@@ -135,57 +186,21 @@
             resize: vertical;
         }
 
-        button {
-            background: #4a4a4a;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-family: inherit;
-            border-radius: 4px;
-        }
-
-        button:hover {
-            background: #666;
-        }
-
-        .auth-section {
+        .user-info {
             text-align: right;
             padding: 10px;
-            margin-bottom: 20px;
-        }
-
-        .user-info {
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        .category-tag {
-            background: #e0e0e0;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            margin-left: 10px;
-        }
-
-        .document-preview {
-            max-width: 200px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-        }
-
-        .metadata {
-            font-size: 0.85em;
             color: #666;
-            margin-top: 5px;
+        }
+
+        #logoutBtn {
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="archive-container">
-        <div class="auth-section">
-            <span class="user-info" id="userInfo"></span>
-            <button id="loginBtn">Login with Google</button>
+        <div class="user-info">
+            <span id="userEmail"></span>
             <button id="logoutBtn" style="display: none;">Logout</button>
         </div>
 
@@ -193,60 +208,101 @@
             <h1>📚 Historical Archive Database</h1>
             <div class="archive-date">National Archives Collection</div>
         </header>
-        
-        <nav class="archive-nav">
-            <a href="#" class="active">Home</a>
-            <a href="#">Medieval Documents</a>
-            <a href="#">War Records</a>
-            <a href="#">Cultural Heritage</a>
-            <a href="#">Scientific Papers</a>
-        </nav>
 
-        <div class="archive-content">
-            <div class="archive-entry">
-                <h2>Historical Records</h2>
-                <ul id="archiveList"></ul>
+        <!-- Auth Forms -->
+        <div class="auth-forms" id="authForms">
+            <div class="auth-form" id="loginForm">
+                <h3>Login to Archive</h3>
+                <form id="emailLoginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">Login</button>
+                </form>
+                <p>Don't have an account? <a id="showSignup">Sign up</a></p>
             </div>
 
-            <div class="add-entry-form" id="entryForm" style="display: none;">
-                <h2>Add Historical Document</h2>
-                <form id="newEntryForm">
+            <div class="auth-form" id="signupForm" style="display: none;">
+                <h3>Create Account</h3>
+                <form id="emailSignupForm">
                     <div class="form-group">
-                        <label for="entryTitle">Document Title:</label>
-                        <input type="text" id="entryTitle" required>
+                        <label for="signupEmail">Email:</label>
+                        <input type="email" id="signupEmail" required>
                     </div>
                     <div class="form-group">
-                        <label for="entryDate">Original Date:</label>
-                        <input type="date" id="entryDate" required>
+                        <label for="signupPassword">Password:</label>
+                        <input type="password" id="signupPassword" required>
                     </div>
                     <div class="form-group">
-                        <label for="category">Category:</label>
-                        <select id="category" required>
-                            <option value="medieval">Medieval Documents</option>
-                            <option value="war">War Records</option>
-                            <option value="cultural">Cultural Heritage</option>
-                            <option value="scientific">Scientific Papers</option>
-                        </select>
+                        <label for="confirmPassword">Confirm Password:</label>
+                        <input type="password" id="confirmPassword" required>
                     </div>
-                    <div class="form-group">
-                        <label for="description">Description:</label>
-                        <textarea id="description" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="document">Upload Document:</label>
-                        <input type="file" id="document" accept=".pdf,.jpg,.png,.doc,.docx">
-                    </div>
-                    <button type="submit">Add to Archive</button>
+                    <button type="submit">Sign Up</button>
                 </form>
+                <p>Already have an account? <a id="showLogin">Login</a></p>
+            </div>
+        </div>
+
+        <!-- Main Archive Content -->
+        <div id="mainContent" style="display: none;">
+            <nav class="archive-nav">
+                <a href="#" class="active">Home</a>
+                <a href="#">Medieval Documents</a>
+                <a href="#">War Records</a>
+                <a href="#">Cultural Heritage</a>
+                <a href="#">Scientific Papers</a>
+            </nav>
+
+            <div class="archive-content">
+                <div class="archive-entry">
+                    <h2>Historical Records</h2>
+                    <ul id="archiveList"></ul>
+                </div>
+
+                <div class="add-entry-form">
+                    <h2>Add Historical Document</h2>
+                    <form id="newEntryForm">
+                        <div class="form-group">
+                            <label for="entryTitle">Document Title:</label>
+                            <input type="text" id="entryTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="entryDate">Original Date:</label>
+                            <input type="date" id="entryDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category:</label>
+                            <select id="category" required>
+                                <option value="medieval">Medieval Documents</option>
+                                <option value="war">War Records</option>
+                                <option value="cultural">Cultural Heritage</option>
+                                <option value="scientific">Scientific Papers</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            <textarea id="description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="document">Upload Document:</label>
+                            <input type="file" id="document" accept=".pdf,.jpg,.png,.doc,.docx">
+                        </div>
+                        <button type="submit">Add to Archive</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js";
 
@@ -268,40 +324,75 @@
 
         // Auth state handling
         auth.onAuthStateChanged(user => {
-            const userInfo = document.getElementById('userInfo');
-            const loginBtn = document.getElementById('loginBtn');
+            const authForms = document.getElementById('authForms');
+            const mainContent = document.getElementById('mainContent');
+            const userEmail = document.getElementById('userEmail');
             const logoutBtn = document.getElementById('logoutBtn');
-            const entryForm = document.getElementById('entryForm');
 
             if (user) {
-                userInfo.textContent = `Welcome, ${user.email}`;
-                loginBtn.style.display = 'none';
+                authForms.style.display = 'none';
+                mainContent.style.display = 'block';
+                userEmail.textContent = user.email;
                 logoutBtn.style.display = 'inline-block';
-                entryForm.style.display = 'block';
             } else {
-                userInfo.textContent = '';
-                loginBtn.style.display = 'inline-block';
+                authForms.style.display = 'block';
+                mainContent.style.display = 'none';
+                userEmail.textContent = '';
                 logoutBtn.style.display = 'none';
-                entryForm.style.display = 'none';
             }
         });
 
-        // Login functionality
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const provider = new GoogleAuthProvider();
+        // Form switching
+        document.getElementById('showSignup').addEventListener('click', () => {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        });
+
+        document.getElementById('showLogin').addEventListener('click', () => {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        });
+
+        // Login
+        document.getElementById('emailLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
             try {
-                await signInWithPopup(auth, provider);
+                await signInWithEmailAndPassword(auth, email, password);
+                e.target.reset();
             } catch (error) {
-                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
             }
         });
 
-        // Logout functionality
+        // Signup
+        document.getElementById('emailSignupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                e.target.reset();
+            } catch (error) {
+                alert('Signup failed: ' + error.message);
+            }
+        });
+
+        // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
                 await signOut(auth);
             } catch (error) {
-                console.error('Logout error:', error);
+                alert('Logout failed: ' + error.message);
             }
         });
 
@@ -324,7 +415,7 @@
             });
         });
 
-        // Form submission handling
+        // New entry form handling
         document.getElementById('newEntryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -349,12 +440,14 @@
                     description,
                     fileUrl,
                     timestamp: serverTimestamp(),
-                    userId: auth.currentUser.uid
+                    userId: auth.currentUser.uid,
+                    userEmail: auth.currentUser.email
                 });
 
                 e.target.reset();
+                alert('Document successfully added to archive!');
             } catch (error) {
-                console.error('Error adding document:', error);
+                alert('Error adding document: ' + error.message);
             }
         });
     </script>
